@@ -14,25 +14,26 @@ export async function createModelGpu(model: ArrayBuffer): Promise<InferenceSessi
 }
 export async function createModelWebnn(model: ArrayBuffer, devicePreference: number = 0): Promise<InferenceSession> {
   init();
-  await setWebnnPolyfillBackend(devicePreference);
-  return await InferenceSession.create(model, {executionProviders: ['wasm', {name: 'webnn', devicePreference: devicePreference}]});
+  // await setWebnnPolyfillBackend(devicePreference);
+  return await InferenceSession.create(model, {executionProviders: ['wasm', {name: 'webnn', deviceType: devicePreference}], logSeverityLevel: 0});
 }
 
-export async function setWebnnPolyfillBackend(devicePreference: number = 0): Promise<void> {
-  if ((navigator as any).ml) {
-    const ml = (navigator as any).ml;
-    if (ml.createContextSync().tf) {
-      // Set backend if using webnn-polyfill
-      const tf = (navigator as any).ml.createContextSync().tf;
-      if (devicePreference === 1) {
-        await tf.setBackend('webgl');
-      } else {
-        await tf.setBackend('wasm');
-      }
-      await tf.ready();
-    }
-  }
-}
+// export async function setWebnnPolyfillBackend(devicePreference: number = 0): Promise<void> {
+//   console.log("WebNN is not supported on the platform, use webnn-polyfill instead");
+//   if ((navigator as any).ml) {
+//     const ml = (navigator as any).ml;
+//     if (ml.createContextSync().tf) {
+//       // Set backend if using webnn-polyfill
+//       const tf = (navigator as any).ml.createContextSync().tf;
+//       if (devicePreference === 1) {
+//         await tf.setBackend('webgl');
+//       } else {
+//         await tf.setBackend('wasm');
+//       }
+//       await tf.ready();
+//     }
+//   }
+// }
 
 export async function warmupModel(model: InferenceSession, dims: number[]) {
   // OK. we generate a random input and call Session.run() as a warmup query

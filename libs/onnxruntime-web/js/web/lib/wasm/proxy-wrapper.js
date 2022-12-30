@@ -156,7 +156,8 @@ const createSession = async (model, options) => {
         });
     }
     else {
-        return core.createSession(model, options);
+        const session = await core.createSession(model, options);
+        return session;
     }
 };
 exports.createSession = createSession;

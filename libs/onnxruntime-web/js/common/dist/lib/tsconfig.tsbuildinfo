@@ -162,8 +162,8 @@
         "affectsGlobalScope": false
       },
       "../../lib/inference-session.ts": {
-        "version": "ccf1241ca96a4045dcbe7bdcb7d55a56ae07e0d9c08b6045e0c30201ae513c60",
-        "signature": "dfabcf0af19031a83141791bd80f653202b3c8407ebcdb6cb7b871552d39c55f",
+        "version": "5260669c19a828909efa43206e0c3816528b20f380c70ca7b683aec0be65814c",
+        "signature": "03bbf2af84a0eb76055d1c0235c3ec5307b0cd3ece0838457a65955536739ede",
         "affectsGlobalScope": false
       },
       "../../lib/backend.ts": {

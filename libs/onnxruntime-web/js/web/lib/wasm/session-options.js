@@ -101,29 +101,29 @@ const setSessionOptions = (options) => {
             for (const ep of options.executionProviders) {
                 const name = typeof ep === 'string' ? ep : ep.name;
                 if (name === 'webnn') {
-                    let devicePreference = 0;
+                    let deviceType = 2;
                     let powerPreference = 0;
                     if (typeof ep !== 'string') {
                         const webnnOptions = ep;
-                        if (webnnOptions === null || webnnOptions === void 0 ? void 0 : webnnOptions.devicePreference) {
-                            devicePreference = webnnOptions.devicePreference;
+                        if (webnnOptions === null || webnnOptions === void 0 ? void 0 : webnnOptions.deviceType) {
+                            deviceType = webnnOptions.deviceType;
                         }
                         if (webnnOptions === null || webnnOptions === void 0 ? void 0 : webnnOptions.powerPreference) {
                             powerPreference = webnnOptions.powerPreference;
                         }
                     }
                     const preferenceValues = [0, 1, 2];
-                    if (!preferenceValues.includes(devicePreference)) {
-                        throw new Error("Invalid devicePerference value, it shoule be one of {0, 1, 2}");
+                    if (!preferenceValues.includes(deviceType)) {
+                        throw new Error("Invalid deviceType value, it shoule be one of {0, 1, 2}");
                     }
                     if (!preferenceValues.includes(powerPreference)) {
                         throw new Error("Invalid powerPreference value, it shoule be one of {0, 1, 2}");
                     }
-                    const devicePreferenceNames = ["Default", "GPU", "CPU"];
-                    const powerPreferenceNames = ["Default", "High-performance", "Low-power"];
-                    console.log(`webnn device preference: ${devicePreferenceNames[devicePreference]}`);
+                    const deviceTypeNames = ["Auto", "GPU", "CPU"];
+                    const powerPreferenceNames = ["Auto", "High-performance", "Low-power"];
+                    console.log(`webnn device type: ${deviceTypeNames[deviceType]}`);
                     console.log(`webnn power preference: ${powerPreferenceNames[powerPreference]}`);
-                    if (wasm._OrtSessionOptionsAppendExecutionProviderWebNN(sessionOptionsHandle, devicePreference, powerPreference) !== 0) {
+                    if (wasm._OrtSessionOptionsAppendExecutionProviderWebNN(sessionOptionsHandle, deviceType, powerPreference) !== 0) {
                         throw new Error(`Can't append WebNN execution provider`);
                     }
                     break;

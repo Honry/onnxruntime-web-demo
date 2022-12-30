@@ -1,26 +1,26 @@
 import registerPromiseWorker from "promise-worker/register";
 import { Tensor, InferenceSession, env } from "onnxruntime-web";
 import { runModelUtils } from "../../utils";
-import 'webnn-polyfill';
+// import 'webnn-polyfill';
  
 // Build version
-// env.wasm.wasmPaths = {
-//     "ort-wasm.wasm": location.origin + "/onnxruntime-web-demo/js/ort-wasm.wasm",
-//     "ort-wasm-simd.wasm": location.origin + "/onnxruntime-web-demo/js/ort-wasm-simd.wasm",
-//     "ort-wasm-threaded.wasm": location.origin + "/onnxruntime-web-demo/js/ort-wasm-threaded.wasm",
-//     "ort-wasm-simd-threaded.wasm":
-//         location.origin + "/onnxruntime-web-demo/js/ort-wasm-simd-threaded.wasm",
-// };
-
-//Dev version
 env.wasm.wasmPaths = {
-    "ort-wasm.wasm": location.origin + "/js/ort-wasm.wasm",
-    "ort-wasm-simd.wasm": location.origin + "/js/ort-wasm-simd.wasm",
-    "ort-wasm-threaded.wasm": location.origin + "/js/ort-wasm-threaded.wasm",
+    "ort-wasm.wasm": location.origin + "/onnxruntime-web-demo/js/ort-wasm.wasm",
+    "ort-wasm-simd.wasm": location.origin + "/onnxruntime-web-demo/js/ort-wasm-simd.wasm",
+    "ort-wasm-threaded.wasm": location.origin + "/onnxruntime-web-demo/js/ort-wasm-threaded.wasm",
     "ort-wasm-simd-threaded.wasm":
-        location.origin + "/js/ort-wasm-simd-threaded.wasm",
+        location.origin + "/onnxruntime-web-demo/js/ort-wasm-simd-threaded.wasm",
 };
 
+//Dev version
+// env.wasm.wasmPaths = {
+//     "ort-wasm.wasm": location.origin + "/js/ort-wasm.wasm",
+//     "ort-wasm-simd.wasm": location.origin + "/js/ort-wasm-simd.wasm",
+//     "ort-wasm-threaded.wasm": location.origin + "/js/ort-wasm-threaded.wasm",
+//     "ort-wasm-simd-threaded.wasm":
+//         location.origin + "/js/ort-wasm-simd-threaded.wasm",
+// };
+env.wasm.numThreads = 1;
 
 let session: InferenceSession;
 let webnnGpuSession: InferenceSession | undefined;
@@ -33,13 +33,13 @@ async function init(message: { type: string; content: { sessionBackend: string; 
     modelFile = message.content.modelFile;
     if (sessionBackend == "webnn_gpu") {
         if (webnnGpuSession) {
-            await runModelUtils.setWebnnPolyfillBackend(1);
+            // await runModelUtils.setWebnnPolyfillBackend(1);
             session = webnnGpuSession;
             return
         }
     } else if (sessionBackend == "webnn_cpu") {
         if (webnnCpuSession) {
-            await runModelUtils.setWebnnPolyfillBackend(2);
+            // await runModelUtils.setWebnnPolyfillBackend(2);
             session = webnnCpuSession;
             return
         }
@@ -54,6 +54,7 @@ async function init(message: { type: string; content: { sessionBackend: string; 
         }
 
     } catch (error) {
+        console.log(error);
         if (sessionBackend === "webnn_gpu") {
             webnnGpuSession = undefined;
         } else if (sessionBackend === "webnn_cpu") {

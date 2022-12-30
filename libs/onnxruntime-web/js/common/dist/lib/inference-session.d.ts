@@ -155,7 +155,8 @@ export declare namespace InferenceSession {
     }
     interface WebNNExecutionProviderOption extends ExecutionProviderOption {
         readonly name: 'webnn';
-        devicePreference?: number;
+        deviceType?: number;
+        powerPreference?: number;
     }
     /**
      * A set of configurations for inference run behavior
