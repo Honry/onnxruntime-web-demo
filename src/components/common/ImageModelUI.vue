@@ -139,8 +139,6 @@ import { runModelUtils } from "../../utils";
 import modelStatus from "./ModelStatus.vue";
 import { InferenceSession, Tensor } from "onnxruntime-web";
 import { Vue, Component, Prop, Watch } from "vue-property-decorator";
-import Worker from "../session-worker/session.worker"
-import PromiseWorker from "promise-worker"
 
 @Component({
   components: {
@@ -181,8 +179,6 @@ export default class ImageModelUI extends Vue {
   imageLoadingError: boolean;
   output: Tensor.DataType;
   modelFile: ArrayBuffer;
-  originalWorker = new Worker();
-  worker_!: PromiseWorker;
 
   constructor() {
     super();
@@ -211,7 +207,6 @@ export default class ImageModelUI extends Vue {
     // fetch the model file to be used later
     const response = await fetch(this.modelFilepath);
     this.modelFile = await response.arrayBuffer();
-    this.worker_ = new PromiseWorker(this.originalWorker);
     try {
       await this.initSession();
     } catch (e) {
@@ -239,12 +234,18 @@ export default class ImageModelUI extends Vue {
       this.modelInitializing = true;
     }
     if (this.sessionBackend === "webnn_gpu") {
-      await this.worker_.postMessage({ type: "init", content: { sessionBackend: "webnn_gpu", modelFile: this.modelFile } })
+      if (this.webnnGpuSession) {
+        this.session = this.webnnGpuSession;
+        return;
+      }
       this.modelLoading = true;
       this.modelInitializing = true;
     }
     if (this.sessionBackend === "webnn_cpu") {
-      await this.worker_.postMessage({ type: "init", content: { sessionBackend: "webnn_cpu", modelFile: this.modelFile } })
+      if (this.webnnCpuSession) {
+        this.session = this.webnnCpuSession;
+        return;
+      }
       this.modelLoading = true;
       this.modelInitializing = true;
     }
@@ -256,18 +257,30 @@ export default class ImageModelUI extends Vue {
       } else if (this.sessionBackend === "wasm") {
         this.cpuSession = await runModelUtils.createModelCpu(this.modelFile);
         this.session = this.cpuSession;
-      } 
+      } else if (this.sessionBackend === "webnn_gpu") {
+        this.webnnGpuSession = await runModelUtils.createModelWebnn(this.modelFile, 1);
+        this.session = this.webnnGpuSession;
+      } else if (this.sessionBackend === "webnn_cpu") {
+        this.webnnCpuSession = await runModelUtils.createModelWebnn(this.modelFile, 2);
+        this.session = this.webnnCpuSession;
+      }
     } catch (e) {
+      console.log('exception: ', e);
       this.modelLoading = false;
       this.modelInitializing = false;
       if (this.sessionBackend === "webgl") {
         this.gpuSession = undefined;
       } else if (this.sessionBackend === "wasm") {
         this.cpuSession = undefined;
-      } 
+      } else if (this.sessionBackend === "webnn_gpu") {
+        this.webnnGpuSession = undefined;
+      } else if (this.sessionBackend === "webnn_cpu") {
+        this.webnnCpuSession = undefined;
+      }
       throw new Error("Error: Backend not supported. ");
     }
     this.modelLoading = false;
+    console.log(`Do warmup for '${this.sessionBackend}' backend...`);
     // warm up session with a sample tensor. Use setTimeout(..., 0) to make it an async execution so
     // that UI update can be done.
     if (this.sessionBackend === "webgl") {
@@ -385,11 +398,7 @@ export default class ImageModelUI extends Vue {
     const ctx = element.getContext("2d") as CanvasRenderingContext2D;
     const preprocessedData = this.preprocess(ctx);
     let tensorOutput = null;
-    if (this.sessionBackend == "webnn_cpu" || this.sessionBackend == "webnn_gpu") {
-      [tensorOutput, this.inferenceTime] = await this.worker_.postMessage({ type: 'run', content: preprocessedData })
-    } else {
-      [tensorOutput, this.inferenceTime] = await runModelUtils.runModel(this.session!, preprocessedData);
-    }
+    [tensorOutput, this.inferenceTime] = await runModelUtils.runModel(this.session!, preprocessedData);
     this.output = tensorOutput.data;
     this.sessionRunning = false;
   }

@@ -135,8 +135,6 @@ import { Vue, Component, Prop, Watch } from "vue-property-decorator";
 import loadImage from "blueimp-load-image";
 import ModelStatus from "../common/ModelStatus.vue";
 import { runModelUtils } from "../../utils";
-import Worker from "../session-worker/session.worker"
-import PromiseWorker from "promise-worker"
 
 @Component({
   components: {
@@ -192,9 +190,6 @@ export default class WebcamModelUI extends Vue {
   modelFile: ArrayBuffer;
   backendSelectList: Array<{ text: string; value: string }>;
 
-  originalWorker = new Worker();
-  worker_!: PromiseWorker;
-
   constructor() {
     super();
     this.inferenceTime = 0;
@@ -233,7 +228,6 @@ export default class WebcamModelUI extends Vue {
     // fetch the model file to be used later
     const response = await fetch(this.modelFilepath);
     this.modelFile = await response.arrayBuffer();
-    this.worker_ = new PromiseWorker(this.originalWorker);
     try {
       await this.initSession();
     } catch (e) {
@@ -261,14 +255,20 @@ export default class WebcamModelUI extends Vue {
       this.modelInitializing = true;
     }
     if (this.sessionBackend === "webnn_gpu") {
-      await this.worker_.postMessage({ type: "init", content: { sessionBackend: "webnn_gpu", modelFile: this.modelFile } })
+      if (this.webnnGpuSession) {
+        this.session = this.webnnGpuSession;
+        return;
+      }
       this.modelLoading = true;
-      this.modelInitializing = true;  
+      this.modelInitializing = true;
     }
     if (this.sessionBackend === "webnn_cpu") {
-      await this.worker_.postMessage({ type: "init", content: { sessionBackend: "webnn_gpu", modelFile: this.modelFile } })
+      if (this.webnnCpuSession) {
+        this.session = this.webnnCpuSession;
+        return;
+      }
       this.modelLoading = true;
-      this.modelInitializing = true;  
+      this.modelInitializing = true;
     }
 
     try {
@@ -278,7 +278,13 @@ export default class WebcamModelUI extends Vue {
       } else if (this.sessionBackend === "wasm") {
         this.cpuSession = await runModelUtils.createModelCpu(this.modelFile);
         this.session = this.cpuSession;
-      } 
+      } else if (this.sessionBackend === "webnn_gpu") {
+        this.webnnGpuSession = await runModelUtils.createModelWebnn(this.modelFile, 1);
+        this.session = this.webnnGpuSession;
+      } else if (this.sessionBackend === "webnn_cpu") {
+        this.webnnCpuSession = await runModelUtils.createModelWebnn(this.modelFile, 2);
+        this.session = this.webnnCpuSession;
+      }
     } catch (e) {
       this.modelLoading = false;
       this.modelInitializing = false;
@@ -286,7 +292,11 @@ export default class WebcamModelUI extends Vue {
         this.gpuSession = undefined;
       } else if (this.sessionBackend === "wasm") {
         this.cpuSession = undefined;
-      } 
+      } else if (this.sessionBackend === "webnn_gpu") {
+        this.webnnGpuSession = undefined;
+      } else if (this.sessionBackend === "webnn_cpu") {
+        this.webnnCpuSession = undefined;
+      }
       throw new Error("Error: Backend not supported. ");
     }
     this.modelLoading = false;
@@ -490,11 +500,8 @@ export default class WebcamModelUI extends Vue {
       this.session,
       data
     );
-    if (this.sessionBackend == "webnn_cpu" || this.sessionBackend == "webnn_gpu") {
-      [outputTensor, this.inferenceTime] = await this.worker_.postMessage({ type: 'run', content: data })
-    } else {
-      [outputTensor, this.inferenceTime] = await runModelUtils.runModel(this.session!, data);
-    }
+    [outputTensor, this.inferenceTime] = await runModelUtils.runModel(this.session!, data);
+
     this.clearRects();
     this.postprocess(outputTensor, this.inferenceTime);
     this.sessionRunning = false;
