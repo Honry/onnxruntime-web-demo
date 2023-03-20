@@ -14,6 +14,6 @@ export function binaryOp(
   }
   const rType = resultType ? resultType : x.type;
   const output =
-      new Tensor(rType, rType === 'bool' ? Uint8Array.from(result.data) : result.data as NumberDataType, result.shape);
+      new Tensor(rType, rType === 'bool' ? Uint8Array.from(result.data as NumberDataType) : result.data as NumberDataType, result.shape);
   return output;
 }
